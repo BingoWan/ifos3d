@@ -2,9 +2,9 @@
 #include <dma.h>
 
 
-#define wx 16
+#define wx 4
 #define wy 1
-#define wz 16
+#define wz 36
 #define MX 64
 //#define DEBUG
 
@@ -144,7 +144,7 @@ void update_s_kernel_fusion_slave(Param_str *param) {
 	int ldm_up = sizeof(float) * wx * wz * 3;
 	int ldm_pi = sizeof(float) * wx * wz * 3;
 	int ldm_u = sizeof(float) * wx * wz * 3;
-	int ldm_total = ldm_vel + ldm_vel + ldm_strs + ldm_up + ldm_pi + ldm_u;
+	int ldm_total = ldm_vel + ldm_strs + ldm_up + ldm_pi + ldm_u;
 	if(id == 0) {
 		//printf("LDM vel = %d Bytes\n", ldm_vel);
 		//printf("LDM stress = %d Bytes\n", ldm_strs);
@@ -170,6 +170,7 @@ void update_s_kernel_fusion_slave(Param_str *param) {
 		izend = wz * (iiz + 1);
 		izend = izend < dim_z ? izend : dim_z;
 		izn = izend - izbeg;
+		dma_set_bsize(&dma_put_6wz, 6 *  izn * sizeof(float));
 
 		for (iix = 0 ; iix < NX ; iix ++) {
 
@@ -371,9 +372,11 @@ void update_s_kernel_fusion_slave(Param_str *param) {
 					strs_temp += wz * 6;
 
 				}
+
 			}/*iy*/
 
 		}/*iix*/
+
 	}/*iiz*/
 
 }

@@ -1,9 +1,9 @@
-#include <stdio.h>
 #include <slave.h>
 #include <dma.h>
-#define wx 16
+
+#define wx 4
 #define wy 1
-#define wz 16
+#define wz 36
 #define MX 64
 //#define DEBUG
 
@@ -149,6 +149,7 @@ void update_v_kernel_fusion_slave(Param_vel *param) {
 		izend = wz * (iiz + 1);
 		izend = izend < dim_z ? izend : dim_z;
 		izn = izend - izbeg;
+		dma_set_bsize(&dma_put_3wz, 3 *  izn * sizeof(float));
 
 		for (iix = 0; iix < NX; iix++) {
 
@@ -302,9 +303,4 @@ void update_v_kernel_fusion_slave(Param_vel *param) {
 		}
 	}
 
-
-
-
-
 }
-

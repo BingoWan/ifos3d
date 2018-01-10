@@ -118,6 +118,20 @@ typedef struct {
 	int MYID;
 } Param_grad;
 
+
+typedef struct {
+	float * vel;
+	float * stress;
+	float * absorb;
+	int slice;
+	int strip;
+	int slice_a;
+	int strip_a;
+	int dimx;
+	int dimy;
+	int dimz;
+} Param_absorb;
+
 /* declaration of functions */
 
 //float ***f3tensor(int nrl, int nrh, int ncl, int nch, int ndl, int ndh);

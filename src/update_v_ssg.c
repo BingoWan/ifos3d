@@ -29,6 +29,7 @@
 
 
 extern SLAVE_FUN(update_v_kernel_fusion_slave)(Param_vel *);
+extern SLAVE_FUN(update_v_kernel_absorb_salve)(Param_absorb *);
 
 double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, float *Fv, float *Fs, float  ***  rho,  float  *** rjp, float  *** rkp, float  *** rip, float **  srcpos_loc, float ** signals, float ** signaly, float ** signalz, int nsrc, float *** absorb_coeff, int back) {
 
@@ -57,6 +58,7 @@ double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, fl
 	int ncol = NX + 2 * (ll*FDORDER/2), ndep = NZ + 2 * (ll*FDORDER/2);
     //int size = nrow * ncol * ndep;
 	float *Frp = transform_3(rip, rjp, rkp, 1, NY, 1, NX, 1, NZ);
+	float *Fabsorb = transform3(absorb_coeff, 1, NY, 1, NX, 1, NZ);
 	int strip = ndep;
 	int slice = ncol * ndep;
 	int strip_rp = NZ;
@@ -185,65 +187,28 @@ double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, fl
 
 	/* absorbing boundary condition (exponential damping) */
 
+
+	Param_absorb param1;
+
+	param1.stress = Fs + 6 * (ny1 * slice + nx1 * strip + nz1);
+	param1.vel = Fv + 3 * (ny1 * slice + nx1 * strip + nz1);
+	param1.absorb = Fabsorb + (ny1 * slice_rp + nx1 * strip_rp + nz1);
+	param1.dimx = dim_x;
+	param1.dimy = dim_y;
+	param1.dimz = dim_z;
+	param1.slice = slice;
+	param1.strip = strip;
+	param1.slice_a = slice_rp;
+	param1.strip_a = strip_rp;
+
 	if (ABS_TYPE==2){
-		for (j=ny1;j<=ny2;j++){
-			for (i=nx1;i<=nx2;i++){
-				for (k=nz1;k<=nz2;k++){
-					int idx = j * slice + i * strip + k;
-					Fv[idx * 3 + 0]*=absorb_coeff[j][i][k];
-					Fv[idx * 3 + 1]*=absorb_coeff[j][i][k];
-					Fv[idx * 3 + 2]*=absorb_coeff[j][i][k];
+	  	athread_spawn(update_v_kernel_absorb_salve, &param1);
+	  	athread_join();
+	}
 
-					Fs[idx * 6 + 0]*=absorb_coeff[j][i][k];
-					Fs[idx * 6 + 1]*=absorb_coeff[j][i][k];
-					Fs[idx * 6 + 2]*=absorb_coeff[j][i][k];
-					Fs[idx * 6 + 3]*=absorb_coeff[j][i][k];
-					Fs[idx * 6 + 4]*=absorb_coeff[j][i][k];
-					Fs[idx * 6 + 5]*=absorb_coeff[j][i][k];
-
-
-			        }
-		        }
-	        }
-        }
-
-
-        /*if (LOG)
-	if (MYID==0){
-		time2=MPI_Wtime();
-		time=time2-time1;
-		fprintf(FP," Real time for particle velocity update: \t %4.2f s.\n",time);
-	}*/
-
-
-	/*
-	for (j=1;j<=NY;j++){
-		for (i=1;i<=NX;i++){
-			for (k=1;k<=NZ;k++){
-	            int idx = j * slice + i * strip + k;
-	            int idx_rp = j * slice_rp + i * strip_rp + k;
-	            if (vz[j][i][k] != 0)
-	            	if(MYID == 0)
-			    	printf("########>line: %d, j:%d, i:%d, k:%d, vz:%f, Fv:%f, sxx:%f, Fs:%f\n", __LINE__,  j, i, k, vz[j][i][k], Fv[idx * 3 + 2], sxx[j][i][k], Fs[idx * 6 + 0]);
-
-
-
-		    //if (MYID == 0 && (szz_z + sxz_x + syz_y) != 0)
-		    	//printf("s:%f\n",(szz_z + sxz_x + syz_y));
-            	//printf("j:%d, i:%d, k:%d, vx:%f, vy:%f, vz: %f, rip:%f\n", j, i, k, vx[j][i][k], vy[j][i][k], vz[j][i][k], rip[j][i][k]);
-
-		    }
-	    }
-    }
-    */
-
-	//debug_v_3(vx, vy, vz, 0-ll*FDORDER/2,NY+ll*FDORDER/2,1-ll*FDORDER/2,NX+ll*FDORDER/2,1-ll*FDORDER/2,NZ+ll*FDORDER/2, true);
-
-	//printf("---###------------------------------------------------------> %s,  %d,  MYID: %d\n", __FUNCTION__, __LINE__, MYID);
 
     free_trans_3(Frp, 1, NY, 1, NX, 1, NZ );
-
-
+    free_trans(Fabsorb, 1, NY, 1, NX, 1, NZ);
 
 
 	return time;
