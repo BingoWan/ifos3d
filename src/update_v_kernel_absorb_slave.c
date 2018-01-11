@@ -1,14 +1,8 @@
-/*
- * update_v_kernel_fusion_slave_2.c
- *
- *  Created on: Jan 3, 2018
- *      Author: bingo
- */
 #include <slave.h>
 #include <dma.h>
 #define wy 1
-#define wx 4
-#define wz 32
+#define wx 1
+#define wz 40
 #define MX 64
 //#define DEBUG
 
@@ -89,7 +83,7 @@ void update_v_kernel_absorb_salve(Param_absorb * param) {
 			ixend = wx * MX * ix + wx * (id + 1);
 			ixend = ixend < dimx ? ixend : dimx;
 			ixn = ixend - ixbeg;
-			if (ixend < ixbeg)
+			if (ixend <= ixbeg)
 				break;
 
 			for (iz = 0; iz < NZ; iz ++) {
@@ -132,15 +126,16 @@ void update_v_kernel_absorb_salve(Param_absorb * param) {
 				}
 
 				put_reply = 0;
+
 				athread_put(PE_MODE,stress_l, stress_s, size * 6 * sizeof(float), &put_reply, 0, 0);
 				athread_put(PE_MODE, vel_l, vel_s, size * 3 * sizeof(float), &put_reply, 0, 0);
 				while(put_reply != 2);
 
-			}
-		}
-	}
-
+			} // end of loop iz
+		} // end of loop ix
+	} // end of loop iy
 }
+
 
 
 

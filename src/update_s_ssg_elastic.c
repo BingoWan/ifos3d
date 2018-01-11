@@ -53,15 +53,15 @@ double update_s_elastic(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, fl
 
 	int nrow = NY + 2 * (ll*FDORDER/2) + 1, ncol = NX + 2 * (ll*FDORDER/2), ndep = NZ + 2 * (ll*FDORDER/2);
 	int size = nrow * ncol * ndep;
-    float *Fpi = transform3(pi, 1, NY + 1, 1, NX + 1, 1, NZ + 1);
-    float *Fu = transform3(u, 1, NY + 1, 1, NX + 1, 1, NZ + 1);
+    float *Fpi = transform3(pi, 0, NY + 1, 0, NX + 1, 0, NZ + 1);
+    float *Fu = transform3(u, 0, NY + 1, 0, NX + 1, 0, NZ + 1);
     float *Fup = transform_3(uipjp, ujpkp, uipkp, 1, NY, 1, NX, 1, NZ);
 	int strip = ndep;
 	int slice = ncol * ndep;
 	int strip_up = NZ;
 	int slice_up = NX * NZ;
-	int strip_pi = NZ + 1;
-	int slice_pi = (NX + 1) * (NZ + 1);
+	int strip_pi = NZ + 2;
+	int slice_pi = (NX + 2) * (NZ + 2);
 
 
 
@@ -123,8 +123,8 @@ double update_s_elastic(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, fl
 
 
     free_trans_3(Fup, 1, NY, 1, NX, 1, NZ);
-    free_trans(Fpi, 1, NY + 1, 1, NX + 1, 1, NZ + 1);
-    free_trans(Fu, 1, NY + 1, 1, NX + 1, 1, NZ + 1);
+    free_trans(Fpi, 0, NY + 1, 0, NX + 1, 0, NZ + 1);
+    free_trans(Fu, 0, NY + 1, 0, NX + 1, 0, NZ + 1);
 
 
 

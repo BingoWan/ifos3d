@@ -42,21 +42,16 @@ double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, fl
 	extern int  FDORDER,  ABS_TYPE, FDCOEFF; extern int MYID;  // ,LOG,*/
 
 
-
 	int i, j, k, l;
 	float  amp, alpha_rad, beta_rad;
-	float b1, b2, b3, b4, b5, b6, dx, dy, dz;
-	float sxx_x, sxy_y, sxz_z, syy_y, sxy_x, syz_z;
-	float szz_z, sxz_x, syz_y;
+	float b1, b2, dx, dy, dz;// b3, b4, b5, b6,
+	//float sxx_x, sxy_y, sxz_z, syy_y, sxy_x, syz_z;
+	//float szz_z, sxz_x, syz_y;
 
 	int ll = 1;
 	if(ABS_TYPE==1 && FDORDER==2){ll=2; printf("ABS:%d, FDOR:%d\n", ABS_TYPE, FDORDER);}
-	 //printf("debugging MYID:%d %s: ------------------------------------------------------------->\n", MYID,  __FUNCTION__);
-    /************************************************* part of array fusion  ****************************************/
 
-	//int nrow = NY + 2 * (ll*FDORDER/2) + 1;
 	int ncol = NX + 2 * (ll*FDORDER/2), ndep = NZ + 2 * (ll*FDORDER/2);
-    //int size = nrow * ncol * ndep;
 	float *Frp = transform_3(rip, rjp, rkp, 1, NY, 1, NX, 1, NZ);
 	float *Fabsorb = transform3(absorb_coeff, 1, NY, 1, NX, 1, NZ);
 	int strip = ndep;
@@ -70,20 +65,9 @@ double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, fl
 	int dim_x = nx2 - nx1 + 1;
 	int dim_y = ny2 - ny1 + 1;
 	int dim_z = nz2 - nz1 + 1;
-	//if(MYID == 0)
-		//printf("---###-----------------------------------> nz1: %d, nz2:%d dim_z: %d\n", nz1, nz2, dim_z);
 
 
 	Param_vel param;
-
-
-	/*unsigned int * test_float;*/
-
-
-
-	/*if (LOG)
-	if (MYID==0) time1=MPI_Wtime();*/
-
 
     switch (FDORDER){
 
@@ -98,7 +82,7 @@ double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, fl
 
 		float *vel = Fv + 3 * (ny1 * slice + nx1 * strip + nz1);
 		float *stress = Fs + 6 * (ny1 * slice + nx1 * strip + nz1);
-		float *rp = Frp + 3 * (ny1 * slice_rp + nx1 * strip_rp + nz1) ;
+		float *rp = Frp + 3 * (ny1 * slice_rp + nx1 * strip_rp + nz1);
 
 
 		param.dim_x = dim_x;
@@ -189,7 +173,6 @@ double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, fl
 	/* absorbing boundary condition (exponential damping) */
 
 
-/*
 	Param_absorb param1;
 
 	param1.stress = Fs + 6 * (ny1 * slice + nx1 * strip + nz1);
@@ -203,33 +186,12 @@ double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, fl
 	param1.slice_a = slice_rp;
 	param1.strip_a = strip_rp;
 
+
 	if (ABS_TYPE==2){
 	  	athread_spawn(update_v_kernel_absorb_salve, &param1);
 	  	athread_join();
 	}
-*/
 
-	if (ABS_TYPE==2){
-		for (j=ny1;j<=ny2;j++){
-			for (i=nx1;i<=nx2;i++){
-				for (k=nz1;k<=nz2;k++){
-					int idx = j * slice + i * strip + k;
-					int idx_absorb = j * slice_rp + i * strip_rp + k;
-					Fv[idx * 3 + 0]*=Fabsorb[idx_absorb];
-					Fv[idx * 3 + 1]*=Fabsorb[idx_absorb];
-					Fv[idx * 3 + 2]*=Fabsorb[idx_absorb];
-
-					Fs[idx * 6 + 0]*=Fabsorb[idx_absorb];
-					Fs[idx * 6 + 1]*=Fabsorb[idx_absorb];
-					Fs[idx * 6 + 2]*=Fabsorb[idx_absorb];
-					Fs[idx * 6 + 3]*=Fabsorb[idx_absorb];
-					Fs[idx * 6 + 4]*=Fabsorb[idx_absorb];
-					Fs[idx * 6 + 5]*=Fabsorb[idx_absorb];
-
-				}
-			}
-		}
-	}
 
     free_trans_3(Frp, 1, NY, 1, NX, 1, NZ );
     free_trans(Fabsorb, 1, NY, 1, NX, 1, NZ);
