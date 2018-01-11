@@ -96,7 +96,6 @@ double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, fl
 		if(FDCOEFF==2){
 		b1=1.1382; b2=-0.046414;} /* Holberg coefficients E=0.1 %*/
 
-		/*
 		float *vel = Fv + 3 * (ny1 * slice + nx1 * strip + nz1);
 		float *stress = Fs + 6 * (ny1 * slice + nx1 * strip + nz1);
 		float *rp = Frp + 3 * (ny1 * slice_rp + nx1 * strip_rp + nz1) ;
@@ -117,43 +116,12 @@ double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, fl
 		param.stress = stress;
 		param.rp = rp;
 
-		//printf("---###------------------------------------------------------> %s,  %d,  MYID: %d\n", __FUNCTION__, __LINE__, MYID);
 
 	  	athread_spawn(update_v_kernel_fusion_slave, &param);
 	  	athread_join();
-	  	//printf("---###------------------------------------------------------> %s,  %d,  MYID: %d\n", __FUNCTION__, __LINE__, MYID);
+
+
 	  	break;
-	  	*/
-
-	      for (j = ny1; j <= ny2; j++) {
-	        for (i = nx1; i <= nx2; i++) {
-	          for (k = nz1; k <= nz2; k++) {
-	            /// each fused array maintains its own index
-	            int idx = j * slice + i * strip + k;
-	            int idx_rp = j * slice_rp + i * strip_rp + k;
-
-	            sxx_x = dx * (b1 * (Fs[(idx + strip) * 6 + 0] - Fs[idx * 6 + 0]) + b2 * (Fs[(idx + 2 * strip) * 6 + 0] - Fs[(idx - strip) * 6 + 0]));
-	            sxy_y = dy * (b1 * (Fs[idx * 6 + 3] - Fs[(idx - slice) * 6 + 3]) + b2 * (Fs[(idx + slice) * 6 + 3] - Fs[(idx - 2 * slice) * 6 + 3]));
-	            sxz_z = dz * (b1 * (Fs[idx * 6 + 5] - Fs[(idx - 1) * 6 + 5]) + b2 * (Fs[(idx + 1) * 6 + 5] - Fs[(idx - 2) * 6 + 5]));
-
-	            // updating components of particle velocities
-	            Fv[idx * 3 + 0] += (sxx_x + sxy_y + sxz_z) / Frp[idx_rp * 3 + 0];
-
-	            syy_y = dy * (b1 * (Fs[(idx + slice) * 6 + 1] - Fs[idx * 6 + 1]) + b2 * (Fs[(idx + 2 * slice) * 6 + 1] - Fs[(idx - slice) * 6 + 1]));
-	            sxy_x = dx * (b1 * (Fs[idx * 6 + 3] - Fs[(idx - strip) * 6 + 3]) + b2 * (Fs[(idx + strip) * 6 + 3] - Fs[(idx - 2 * strip) * 6 + 3]));
-	            syz_z = dz * (b1 * (Fs[idx * 6 + 4] - Fs[(idx - 1) * 6 + 4]) + b2 * (Fs[(idx + 1) * 6 + 4] - Fs[(idx - 2) * 6 + 4]));
-
-	            Fv[idx * 3 + 1] += (syy_y + sxy_x + syz_z) / Frp[idx_rp * 3 + 1];
-
-	            szz_z = dz * (b1 * (Fs[(idx + 1) * 6 + 2] - Fs[idx * 6 + 2]) + b2 * (Fs[(idx + 2) * 6 + 2] - Fs[(idx - 1) * 6 + 2]));
-	            sxz_x = dx * (b1 * (Fs[idx * 6 + 5] - Fs[(idx - strip) * 6 + 5]) + b2 * (Fs[(idx + strip) * 6 + 5] - Fs[(idx - 2 * strip) * 6 + 5]));
-	            syz_y = dy * (b1 * (Fs[idx * 6 + 4] - Fs[(idx - slice) * 6 + 4]) + b2 * (Fs[(idx + slice) * 6 + 4] - Fs[(idx - 2 * slice) * 6 + 4]));
-
-	            Fv[idx * 3 + 2] += (szz_z + sxz_x + syz_y) / Frp[idx_rp * 3 + 2];
-	          }
-	        }
-	      }
-
 
 
 
@@ -221,6 +189,7 @@ double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, fl
 	/* absorbing boundary condition (exponential damping) */
 
 
+/*
 	Param_absorb param1;
 
 	param1.stress = Fs + 6 * (ny1 * slice + nx1 * strip + nz1);
@@ -238,7 +207,29 @@ double update_v(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, int nt, fl
 	  	athread_spawn(update_v_kernel_absorb_salve, &param1);
 	  	athread_join();
 	}
+*/
 
+	if (ABS_TYPE==2){
+		for (j=ny1;j<=ny2;j++){
+			for (i=nx1;i<=nx2;i++){
+				for (k=nz1;k<=nz2;k++){
+					int idx = j * slice + i * strip + k;
+					int idx_absorb = j * slice_rp + i * strip_rp + k;
+					Fv[idx * 3 + 0]*=Fabsorb[idx_absorb];
+					Fv[idx * 3 + 1]*=Fabsorb[idx_absorb];
+					Fv[idx * 3 + 2]*=Fabsorb[idx_absorb];
+
+					Fs[idx * 6 + 0]*=Fabsorb[idx_absorb];
+					Fs[idx * 6 + 1]*=Fabsorb[idx_absorb];
+					Fs[idx * 6 + 2]*=Fabsorb[idx_absorb];
+					Fs[idx * 6 + 3]*=Fabsorb[idx_absorb];
+					Fs[idx * 6 + 4]*=Fabsorb[idx_absorb];
+					Fs[idx * 6 + 5]*=Fabsorb[idx_absorb];
+
+				}
+			}
+		}
+	}
 
     free_trans_3(Frp, 1, NY, 1, NX, 1, NZ );
     free_trans(Fabsorb, 1, NY, 1, NX, 1, NZ);
