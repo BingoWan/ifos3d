@@ -93,6 +93,7 @@ double update_s_elastic(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, fl
 			b1=1.1382; b2=-0.046414;} /* Holberg coefficients E=0.1 %*/
 
 
+		/*
 		param.dim_x = dim_x;
 		param.dim_y = dim_y;
 		param.dim_z = dim_z;
@@ -116,6 +117,53 @@ double update_s_elastic(int nx1, int nx2, int ny1, int ny2, int nz1, int nz2, fl
 		//signal(SIGUSR1, pc_on_sig);
 		athread_spawn(update_s_kernel_fusion_slave, &param);
 		athread_join();
+
+		break;
+		*/
+
+		for (j = ny1; j <=  ny2; j++){
+			for (i = nx1; i <= nx2; i++){
+				for (k = nz1; k <= nz2; k++){
+					int idx = j * slice + i * strip + k;
+					int idx_n = j * slice_up + i * strip_up + k;
+					int idx_p = j * slice_pi + i * strip_pi + k;
+					vxx = (b1 * (Fv[idx * 3 + 0] - Fv[(idx - strip) * 3 + 0]) + b2 * (Fv[(idx + strip) * 3 + 0] - Fv[(idx - 2 * strip) * 3 + 0])) / DX;
+					vxy = (b1 * (Fv[(idx + slice) * 3 + 0] - Fv[idx * 3 + 0]) + b2 * (Fv[(idx + 2 * slice) * 3 + 0] - Fv[(idx - slice) * 3 + 0])) / DY;
+					vxz = (b1 * (Fv[(idx + 1) * 3 + 0] - Fv[idx * 3 + 0]) + b2 * (Fv[(idx + 2) * 3 + 0] - Fv[(idx -1) * 3 + 0])) / DZ;
+					vyx = (b1 * (Fv[(idx + strip) * 3 + 1] - Fv[idx * 3 + 1]) + b2 * (Fv[(idx + 2 * strip) * 3 + 1] - Fv[(idx - strip) * 3 + 1])) / DX;
+					vyy = (b1 * (Fv[idx * 3 + 1] - Fv[(idx - slice) * 3 + 1]) + b2 * (Fv[(idx + slice) * 3 + 1] - Fv[(idx - 2 * slice) * 3 + 1])) / DY;
+					vyz = (b1 * (Fv[(idx + 1) * 3 + 1] - Fv[idx * 3 + 1]) + b2 * (Fv[(idx + 2) * 3 + 1] - Fv[(idx - 1) * 3 + 1])) / DZ;
+					vzx = (b1 * (Fv[(idx + strip) * 3 + 2] - Fv[idx * 3 + 2]) + b2 * (Fv[(idx + 2 * strip) * 3 + 2] - Fv[(idx - strip) * 3 + 2])) / DX;
+					vzy = (b1 * (Fv[(idx + slice) * 3 + 2] - Fv[idx * 3 + 2]) + b2 * (Fv[(idx + 2 * slice) * 3 + 2] - Fv[(idx - slice) * 3 + 2])) / DY;
+					vzz = (b1 * (Fv[idx * 3 + 2] - Fv[(idx - 1) * 3 + 2]) + b2 * (Fv[(idx + 1) * 3 + 2] - Fv[(idx - 2) * 3 + 2])) / DZ;
+
+
+					// updating components of the stress tensor, partially
+					fipjp=Fup[idx_n * 3 + 0] * DT;
+					fjpkp=Fup[idx_n * 3 + 1] * DT;
+					fipkp=Fup[idx_n * 3 + 2] * DT;
+					g = Fpi[idx_p];
+					f = 2.0*Fu[idx_p];
+
+
+					vxyyx=vxy+vyx;
+					vyzzy=vyz+vzy;
+					vxzzx=vxz+vzx;
+					vxxyyzz=vxx+vyy+vzz;
+					vyyzz=vyy+vzz;
+					vxxzz=vxx+vzz;
+					vxxyy=vxx+vyy;
+
+
+					Fs[6 * idx + 0] += DT*((g*vxxyyzz)-(f*vyyzz));
+					Fs[6 * idx + 1] += DT*((g*vxxyyzz)-(f*vxxzz));
+					Fs[6 * idx + 2] += DT*((g*vxxyyzz)-(f*vxxyy));
+					Fs[6 * idx + 3] += (fipjp*vxyyx);
+					Fs[6 * idx + 4] += (fjpkp*vyzzy);
+					Fs[6 * idx + 5] += (fipkp*vxzzx);
+				}
+			}
+		}
 
 		break;
 
